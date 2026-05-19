@@ -29,13 +29,15 @@ module.exports.getallproducts = async (req, res) => {
 module.exports.addproducts = async (req, res) => {
     try {
         console.log("BODY:", req.body);
-        console.log("FILE:", req.file);
+        console.log("FILES:", req.files);
 
-        let imageURL = "";
+        let imageURLs = [];
 
-        if (req.file && req.file.buffer) {
-            const result = await uploadImage(req.file.buffer);
-            imageURL = result.secure_url;
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const result = await uploadImage(file.buffer);
+                imageURLs.push(result.secure_url);
+            }
         }
 
         const product = new Product({
@@ -43,7 +45,7 @@ module.exports.addproducts = async (req, res) => {
             price: req.body.price,
             description: req.body.description,
             category: req.body.category,
-            imageURL,
+            imageURLs, // store as array
         });
         console.log(product, "Product to be saved");
 
@@ -51,7 +53,7 @@ module.exports.addproducts = async (req, res) => {
 
         res.json(product);
     } catch (err) {
-        console.log("UPLOAD ERROR:", err); // 🔥 IMPORTANT
+        console.log("UPLOAD ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
@@ -65,10 +67,27 @@ module.exports.editproducts = async (req, res) => {
             category: req.body.category,
         };
 
-        if (req.file) {
-            const result = await uploadImage(req.file.buffer);
-            updateData.imageURL = result.secure_url;
+        // Parse existing images from the form (can be string or array)
+        let existingImages = [];
+        if (req.body.existingImages) {
+            if (Array.isArray(req.body.existingImages)) {
+                existingImages = req.body.existingImages;
+            } else {
+                existingImages = [req.body.existingImages];
+            }
         }
+
+        // Handle new uploads
+        let newImageURLs = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const result = await uploadImage(file.buffer);
+                newImageURLs.push(result.secure_url);
+            }
+        }
+
+        // Merge existing and new images
+        updateData.imageURLs = [...existingImages, ...newImageURLs];
 
         const updated = await Product.findByIdAndUpdate(
             req.params.id,

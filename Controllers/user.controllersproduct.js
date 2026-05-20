@@ -67,7 +67,6 @@ module.exports.editproducts = async (req, res) => {
             category: req.body.category,
         };
 
-        // Parse existing images from the form (can be string or array)
         let existingImages = [];
         if (req.body.existingImages) {
             if (Array.isArray(req.body.existingImages)) {
@@ -77,7 +76,6 @@ module.exports.editproducts = async (req, res) => {
             }
         }
 
-        // Handle new uploads
         let newImageURLs = [];
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
@@ -85,10 +83,7 @@ module.exports.editproducts = async (req, res) => {
                 newImageURLs.push(result.secure_url);
             }
         }
-
-        // Merge existing and new images
         updateData.imageURLs = [...existingImages, ...newImageURLs];
-
         const updated = await Product.findByIdAndUpdate(
             req.params.id,
             updateData,

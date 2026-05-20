@@ -76,3 +76,51 @@ module.exports.login = async (req, res) => {
     }
 
 }
+
+
+module.exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    // FIND ADMIN
+    const admin = await Admin.findOne()
+
+    if (!admin) {
+      return res.status(404).json({
+        message: 'Admin not found',
+      })
+    }
+
+    // CHECK CURRENT PASSWORD
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      admin.password
+    )
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: 'Current password is incorrect',
+      })
+      console.log("Current password is incorrect");
+      
+    }
+
+    // ✅ JUST SET NEW PASSWORD
+    // pre('save') will hash automatically
+    admin.password = newPassword
+
+    await admin.save()
+
+    res.status(200).json({
+      message: 'Password updated successfully',
+    })
+    console.log("Password updated successfully");
+
+  } catch (err) {
+    console.log(err)
+
+    res.status(500).json({
+      message: 'Server Error',
+    })
+  }
+}
